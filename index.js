@@ -1,43 +1,50 @@
-import express from "express";
+// server.js
 
-import dotenv from "dotenv";
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+require('dotenv').config();
 
-import mongoose from "mongoose";
-
-import { Book } from "./models/bookModel.js";
-
-import booksRoute from "./routes/booksRoute.js";
-
-dotenv.config();
-
-const PORT = process.env.PORT || 3500; // If process.env.PORT is undefined, then it defaults to 3000
 const app = express();
+const PORT = process.env.PORT || 5555;
 
-app.use(express.json()); //this is so that you can enter json inputs
+// Middleware
+app.use(cors());
+app.use(express.json());
 
-// app.use(cors({
-//   origin: 'http://localhost:3000',
-//   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-//   allowedHeaders: ['Content-Type'],
-// }));
+// MongoDB connection
+mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log('MongoDB connected successfully'))
+.catch((err) => console.error('MongoDB connection error:', err));
 
-app.use(cors())
+// Define Series model
+const seriesSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  speaker: { type: String, required: true },
+  views: { type: String, required: true },
+  episodes: { type: String, required: true },
+  category: { type: String, required: true },
+  subCategory: { type: String, required: true },
+  thumbnail: { type: String, required: true },
+  link: { type: String, required: true }
+}, { timestamps: true });
 
-app.get("/", (request, response) => {
-  console.log(request);
-  return response.status(234).send("Welcome to MERN Stack Tutorial");
+const Series = mongoose.model('Series', seriesSchema);
+
+// API Routes
+app.get('/api/series', async (req, res) => {
+  try {
+    const series = await Series.find();
+    res.json(series);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching series data', error: error.message });
+  }
 });
 
-app.use("/books", booksRoute);
-
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(() => {
-    console.log("app connected to database");
-    app.listen(PORT, () => {
-      console.log(`App is listening to port ${PORT}`);
-    });
-  })
-  .catch((error) => {
-    console.log(error);
-  });
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
